@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% block title %}SAML / XML 解析{% endblock %}
+{% block content %}
+  <p><a href="{{ url_for('index') }}">&larr; 回首頁</a></p>
+  <h1>SAML / XML 解析</h1>
+
+  <div class="panel">
+    <label for="input-text">貼上 XML / Base64 / Base64+Deflate（SAMLResponse、LogoutRequest...）</label>
+    <textarea id="input-text" rows="12" placeholder="貼上原始 XML，或是從瀏覽器複製下來的 SAMLResponse 參數值"></textarea>
+
+    <div class="actions">
+      <button id="btn-parse">解析 →</button>
+      <button id="btn-clear" class="secondary">清除</button>
+    </div>
+
+    <div class="msg-row">
+      <span id="error-badge" class="badge badge-danger"></span>
+      <span id="method-badge" class="badge badge-success"></span>
+    </div>
+  </div>
+
+  <div id="result-area" style="display:none;">
+    <div class="panel" style="margin-top:20px;">
+      <label>欄位摘要</label>
+      <table class="kv-table" id="summary-table"></table>
+    </div>
+
+    <div class="panel" id="attributes-panel" style="margin-top:20px; display:none;">
+      <label>Attributes</label>
+      <table class="kv-table" id="attributes-table"></table>
+    </div>
+
+    <div class="panel" style="margin-top:20px;">
+      <label>完整樹狀結構</label>
+      <div id="tree-root" class="tree-root"></div>
+    </div>
+  </div>
+
+  <script>
+    const inputEl = document.getElementById('input-text');
+    const errBadge = document.getElementById('error-badge');
+    const methodBadge = document.getElementById('method-badge');
+    const resultArea = document.getElementById('result-area');
+    const summaryTable = document.getElementById('summary-table');
+    const attributesPanel = document.getElementById('attributes-panel');
+    const attributesTable = document.getElementById('attributes-table');
+    const treeRoot = document.getElementById('tree-root');
+
+    function showBadge(el) { el.classList.add('show'); }
+    function hideBadge(el) { el.classList.remove('show'); }
+
+    function clearChildren(el) {
+      while (el.firstChild) el.removeChild(el.firstChild);
+    }
+
+    function addRow(table, label, value) {
+      const tr = document.createElement('tr');
+      const tdLabel = document.createElement('td');
+      tdLabel.className = 'label';
+      tdLabel.textContent = label;
+      const tdValue = document.createElement('td');
+      tdValue.className = 'value';
+      tdValue.textContent = value;
+      tr.appendChild(tdLabel);
+      tr.appendChild(tdValue);
+      table.appendChild(tr);
+    }
+
+    function renderTree(node, container) {
+      const wrap = document.createElement('div');
+      wrap.className = 'tree-node';
+
+      const row = document.createElement('div');
+      row.className = 'tree-row';
+
+      let label = node.tag;
+      if (node.label_suffix) label += `[${node.label_suffix}]`;
+
+      const hasChildren = node.children && node.children.length > 0;
+      const hasAttrs = node.attrs && node.attrs.length > 0;
+
+      let childrenBox = null;
+      if (hasChildren || hasAttrs) {
+        const toggle = document.createElement('span');
+        toggle.className = 'tree-toggle';
+        toggle.textContent = '▾';
+        row.appendChild(toggle);
+
+        childrenBox = document.createElement('div');
+        childrenBox.className = 'tree-children';
+        toggle.addEventListener('click', () => {
+          const collapsed = childrenBox.classList.toggle('collapsed');
+          toggle.textContent = collapsed ? '▸' : '▾';
+        });
+      } else {
+        const spacer = document.createElement('span');
+        spacer.className = 'tree-toggle';
+        row.appendChild(spacer);
+      }
+
+      const tagSpan = document.createElement('span');
+      tagSpan.className = 'tree-tag';
+      tagSpan.textContent = label;
+      row.appendChild(tagSpan);
+
+      if (node.text) {
+        const textSpan = document.createElement('span');
+        textSpan.className = 'tree-text';
+        textSpan.textContent = ': ' + node.text;
+        row.appendChild(textSpan);
+      }
+
+      wrap.appendChild(row);
+
+      if (childrenBox) {
+        (node.attrs || []).forEach(a => {
+          const attrRow = document.createElement('div');
+          attrRow.className = 'tree-row tree-attr';
+          attrRow.textContent = `@${a.name}: ${a.value}`;
+          childrenBox.appendChild(attrRow);
+        });
+        (node.children || []).forEach(child => renderTree(child, childrenBox));
+        wrap.appendChild(childrenBox);
+      }
+
+      container.appendChild(wrap);
+    }
+
+    async function doParse() {
+      hideBadge(errBadge);
+      hideBadge(methodBadge);
+      resultArea.style.display = 'none';
+
+      const res = await fetch('/tools/xml/api/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: inputEl.value }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        errBadge.textContent = data.error || '發生錯誤';
+        showBadge(errBadge);
+        return;
+      }
+
+      methodBadge.textContent = `判讀為：${data.decode_method}`;
+      showBadge(methodBadge);
+
+      clearChildren(summaryTable);
+      data.summary.forEach(row => addRow(summaryTable, row.label, row.value));
+
+      clearChildren(attributesTable);
+      if (data.attributes && data.attributes.length) {
+        data.attributes.forEach(attr => {
+          addRow(attributesTable, attr.name, attr.values.join(', '));
+        });
+        attributesPanel.style.display = '';
+      } else {
+        attributesPanel.style.display = 'none';
+      }
+
+      clearChildren(treeRoot);
+      renderTree(data.tree, treeRoot);
+
+      resultArea.style.display = '';
+    }
+
+    document.getElementById('btn-parse').addEventListener('click', doParse);
+    document.getElementById('btn-clear').addEventListener('click', () => {
+      inputEl.value = '';
+      hideBadge(errBadge);
+      hideBadge(methodBadge);
+      resultArea.style.display = 'none';
+    });
+  </script>
+{% endblock %}

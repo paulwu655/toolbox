@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}工具集 - 首頁{% endblock %}
+{% block content %}
+  <h1>工具集</h1>
+  <div class="card-grid">
+    {% for tool in tools %}
+      <a class="card" href="{{ url_for(tool.blueprint.name + '.index') }}">
+        <h2>{{ tool.name }}</h2>
+        <p>{{ tool.description|safe }}</p>
+      </a>
+    {% endfor %}
+  </div>
+{% endblock %}
