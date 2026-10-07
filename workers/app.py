@@ -8,7 +8,7 @@
 
 import os
 
-from flask import Flask, render_template
+from flask import Flask
 
 from tools import TOOLS
 
@@ -16,11 +16,6 @@ app = Flask(__name__)
 
 for tool in TOOLS:
     app.register_blueprint(tool["blueprint"])
-
-
-@app.route("/")
-def index():
-    return render_template("index.html", tools=TOOLS)
 
 
 if __name__ == "__main__":

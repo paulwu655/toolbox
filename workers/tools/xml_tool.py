@@ -12,7 +12,7 @@ import binascii
 import zlib
 import xml.etree.ElementTree as ET
 
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, request
 
 bp = Blueprint("xml_tool", __name__, url_prefix="/tools/xml")
 
@@ -138,11 +138,6 @@ def build_tree(elem):
         "text": _text(elem),
         "children": [build_tree(c) for c in elem],
     }
-
-
-@bp.route("/", methods=["GET"])
-def index():
-    return render_template("xml_tool.html")
 
 
 @bp.route("/api/parse", methods=["POST"])

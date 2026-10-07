@@ -3,14 +3,9 @@
 import base64
 import binascii
 
-from flask import Blueprint, jsonify, render_template, request
+from flask import Blueprint, jsonify, request
 
 bp = Blueprint("base64_tool", __name__, url_prefix="/tools/base64")
-
-
-@bp.route("/", methods=["GET"])
-def index():
-    return render_template("base64.html")
 
 
 @bp.route("/api/encode", methods=["POST"])
