@@ -17,6 +17,17 @@ app = Flask(__name__)
 for tool in TOOLS:
     app.register_blueprint(tool["blueprint"])
 
+# 部署 Pages 後，把這裡換成實際網域（見 GitHub issue #7）
+ALLOWED_ORIGIN = "https://toolbox.pages.dev"
+
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = ALLOWED_ORIGIN
+    response.headers["Access-Control-Allow-Methods"] = "POST, OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type"
+    return response
+
 
 if __name__ == "__main__":
     host = os.environ.get("TOOL_HOST", "0.0.0.0")
