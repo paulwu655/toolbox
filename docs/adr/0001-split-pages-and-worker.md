@@ -10,3 +10,7 @@ We picked this over Pages Functions because the goal is genuine frontend/backend
 
 - **Pages Functions (rejected)**: frontend and API in one Pages project, one deploy. Simplest, but frontend and backend are permanently bound to the same deploy unit.
 - **Pages + independent Worker (chosen)**: two services, decoupled, CORS required.
+
+## Consequences
+
+As of this deployment (2026-10), Cloudflare has unified Pages into Workers with Static Assets: `wrangler pages deploy` just delegates to `wrangler deploy` under the hood, and a "Pages project" is really a Worker with an `assets` binding. This doesn't change the decision above — we still have two independent, separately-deployed services — but it does mean the frontend is named `toolbox-pages` (a Worker), not a classic Pages project, because Workers and former-Pages projects now share one name namespace per account and `toolbox` was already taken by the API worker.
