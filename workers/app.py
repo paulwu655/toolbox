@@ -18,7 +18,7 @@ for tool in TOOLS:
     app.register_blueprint(tool["blueprint"])
 
 # 部署 Pages 後，把這裡換成實際網域（見 GitHub issue #7）
-ALLOWED_ORIGIN = "https://toolbox.pages.dev"
+ALLOWED_ORIGIN = "https://toolbox-pages.stormyelbow.workers.dev"
 
 
 @app.after_request
